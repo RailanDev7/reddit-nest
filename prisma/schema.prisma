@@ -1,0 +1,147 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id Int @id @default(autoincrement())
+  email String @unique
+  password String
+  profile Profile?
+  community Community[]
+  comunityMember ComunityMember[]
+  post Post[]
+  comment Comment[]
+  postvote PostVote[]
+  commentvote CommentVote[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Profile{ 
+  id Int @id @default(autoincrement())
+  bio String? @db.Text
+  photo_url String?
+  banner_url String?
+  username String @unique
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Community {
+  id Int @id @default(autoincrement())
+  name String @unique
+  slug String @unique
+  bio String @db.Text
+  image_url String?
+  creatorId Int
+  user User @relation(fields: [creatorId], references: [id])
+  members ComunityMember[]
+  post Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model ComunityMember {
+    id Int @id @default(autoincrement())
+    userId Int
+    communityId Int
+    role CommunityRole @default(MEMBER)
+    user User @relation(fields: [userId], references: [id])
+    community Community @relation(fields: [communityId], references: [id])
+    createdAt DateTime @default(now())
+    @@unique([userId, communityId])
+}
+enum CommunityRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+
+model Post {
+   id Int @id @default(autoincrement())
+   title String
+   content String @db.Text
+   image_url String?
+   video_url String?
+   communityId Int
+   userId Int
+   user User @relation(fields: [userId], references: [id])
+   community Community @relation(fields: [communityId], references: [id])
+   comment Comment[]
+   postvote PostVote[]
+   @@index([communityId])
+   @@index([userId])
+   createdAt DateTime @default(now())
+   updatedAt DateTime @updatedAt
+   deletedAt DateTime?
+}
+
+model Comment {
+  id Int @id @default(autoincrement())
+  content String @db.Text
+  postId Int
+  userId Int
+  parentId Int?
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  parent Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReplies")
+  commentvote CommentVote[]
+  @@index([parentId])
+  @@index([userId])
+  @@index([postId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+
+model PostVote {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  postId Int
+
+  type VoteType
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model CommentVote {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  commentId Int
+
+  type VoteType
+
+  user User @relation(fields: [userId], references: [id])
+  comment Comment @relation(fields: [commentId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+
+  @@index([commentId])
+  @@index([userId])
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
+}
