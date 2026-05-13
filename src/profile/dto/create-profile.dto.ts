@@ -31,7 +31,4 @@ export class CreateProfileDto {
   @MinLength(3)
   @MaxLength(30)
   username!: string;
-
-  @IsInt()
-  userId!: number;
 }

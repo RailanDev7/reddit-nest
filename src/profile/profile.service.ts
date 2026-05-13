@@ -1,29 +1,68 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, HttpCode, HttpStatus, Injectable, OnModuleInit } from '@nestjs/common';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { PrismaConfigService } from '../prisma-config/prisma-config.service';
 
 @Injectable()
 export class ProfileService {
-  create(createProfileDto: CreateProfileDto) {
-    return 'This action adds a new profile';
+  constructor(
+    private prisma: PrismaConfigService
+  ) { }
+  async create(dates: CreateProfileDto, userId: number, files: any) {
+    if (!userId) {
+      message: "UserId is required."
+    }
+    const profileExist = await this.prisma.profile.findUnique({
+      where: {
+        userId: userId
+      }
+    })
+    if (profileExist) {
+      throw new ConflictException('Profile already exists');
+    }
+
+    const photo = files?.photo?.[0];
+    const banner = files?.banner?.[0];
+    const profile = await this.prisma.profile.create({
+      data: {
+        bio: dates.bio,
+        username: dates.username,
+        userId,
+
+        photo_url: photo
+          ? `/uploads/${photo.filename}`
+          : null,
+
+        banner_url: banner
+          ? `/uploads/${banner.filename}`
+          : null,
+      },
+    });
+
+    return profile;
   }
-  async createProfileService(body, userId) {
-    console.log(userId, body)
+  async findAll() {
+   
   }
 
-  findAll() {
-    return `This action returns all profile`;
+  async findOne(id: number) {
+   
+      
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} profile`;
+  async update(id: number, updateProfileDto: UpdateProfileDto) {
+    
   }
 
-  update(id: number, updateProfileDto: UpdateProfileDto) {
-    return `This action updates a #${id} profile`;
+  async remove(id: number) {
+    
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} profile`;
+  async findByUserId(userId: number) {
+   
+  }
+
+  async findByUsername(username: string) {
+   
   }
 }
