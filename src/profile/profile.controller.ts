@@ -21,6 +21,7 @@ import { AuthGuard } from '@nestjs/passport';
 
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { imageFileFilter } from './formatters/icons.formatters';
+import { memoryStorage } from 'multer';
 
 @Controller('api/v1/profile')
 export class ProfileController {
@@ -28,24 +29,17 @@ export class ProfileController {
     private readonly profileService: ProfileService,
   ) {}
 
+  //search profile
   @UseGuards(AuthGuard('jwt'))
-  @Get(':id')
-  async getProfile(@Param('id') id: string) {
-    return this.profileService.findOne(Number(id));
-  }
-
-
-
-  @UseGuards(AuthGuard('jwt'))
-  @Get('me')
+  @Get('user/me')
   async getMyProfile(@Request() req) {
     const userId = req.user.id;
-
-    return this.profileService.findByUserId(userId);
+    console.log(userId)
+    return this.profileService.findByProfile(userId);
   }
 
 
-  //criar perfil
+  //creating profile
 @UseGuards(AuthGuard('jwt'))
 @UseInterceptors(
   FileFieldsInterceptor(
@@ -60,8 +54,10 @@ export class ProfileController {
       },
     ],
     {
-      dest: './uploads',
-
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
       fileFilter: imageFileFilter,
     },
   ),
