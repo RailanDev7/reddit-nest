@@ -116,6 +116,34 @@ export class ProfileService {
     return profile;
   }
 
+//search profile ID
+  async findOneProfile(userId: number, id: number) {
+    if (!userId) {
+      throw new BadRequestException(
+        'UserId is required',
+      );
+    }
+    const idExist = await this.prisma.profile.findUnique({
+      where: {
+        userId: id
+      }
+    })
+    if(!idExist){
+        throw new NotFoundException(
+        'User does not exist',
+      );
+    }
+    return await this.prisma.profile.findMany({
+      where: { userId: id},
+      select: {
+        userId: true,
+        username: true,
+        photo_url: true,
+        banner_url: true,
+        createdAt: true
+      }
+    },)
+  }
 
 
   //update profile
@@ -251,7 +279,7 @@ export class ProfileService {
         }
       },
       select: {
-        id: true,
+        userId: true,
         username: true,
         photo_url: true,
         createdAt: true

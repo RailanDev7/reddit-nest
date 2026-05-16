@@ -130,13 +130,18 @@ async searchProfile(
   return this.profileService.findByUsername(userId, username, Number(page) || 1)
 }
 
-
+@UseGuards(AuthGuard('jwt'))
+@Get('user/search/:id')
+async findProfileId(
+  @Request() req, @Param('id') id: string) {
+   const userId = req.user.id;
+  return this.profileService.findOneProfile(userId, Number(id))
+}
 
   @UseGuards(AuthGuard('jwt'))
   @Delete('delete')
-  async deleteProfile(@Request() req) {
-
+  async deleteProfile(@Request() req, ) {
     const userId = req.user.id;
-
+    
   }
 }
