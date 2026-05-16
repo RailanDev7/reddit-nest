@@ -77,18 +77,40 @@ async createProfile(
     files
   );
 }
-  @UseGuards(AuthGuard('jwt'))
-  @Patch('update')
+@UseGuards(AuthGuard('jwt'))
+@UseInterceptors(
+  FileFieldsInterceptor(
+    [
+      {
+        name: 'photo',
+        maxCount: 1,
+      },
+      {
+        name: 'banner',
+        maxCount: 1,
+      },
+    ],
+    {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+      fileFilter: imageFileFilter,
+    },
+  ),
+)
+  @Patch('user/update')
   async updateProfile(
     @Request() req,
     @Body() updateProfileDto: UpdateProfileDto,
+  @UploadedFiles() files: any,
   ) {
 
     const userId = req.user.id;
-
     return this.profileService.update(
       userId,
       updateProfileDto,
+      files
     );
   }
 

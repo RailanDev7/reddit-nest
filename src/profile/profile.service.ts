@@ -120,10 +120,86 @@ export class ProfileService {
 
   async findOne(id: number) {}
 
+
+  //update profile
   async update(
-    id: number,
-    updateProfileDto: UpdateProfileDto,
-  ) {}
+    userId: number,
+    dates: UpdateProfileDto,
+    files: any,
+  ) {
+     if (!userId) {
+      throw new BadRequestException(
+        'UserId is required',
+      );
+    }
+
+    const profileExist =
+      await this.prisma.profile.findUnique({
+        where: {
+          userId,
+        },
+      });
+
+    if (!profileExist) {
+      throw new NotFoundException(
+        'Profile does not exist',
+      );
+    }
+     const photo = files?.photo?.[0];
+    const banner = files?.banner?.[0];
+
+    let photoPath: string | null = null;
+    let bannerPath: string | null = null;
+
+    if (photo) {
+      const photoName = `${randomUUID()}-${
+        photo.originalname
+      }`;
+
+      fs.writeFileSync(
+        path.join(
+          process.cwd(),
+          'uploads',
+          photoName,
+        ),
+        photo.buffer,
+      );
+
+      photoPath = `/uploads/${photoName}`;
+    }
+
+    // salva banner manualmente
+    if (banner) {
+      const bannerName = `${randomUUID()}-${
+        banner.originalname
+      }`;
+
+      fs.writeFileSync(
+        path.join(
+          process.cwd(),
+          'uploads',
+          bannerName,
+        ),
+        banner.buffer,
+      );
+
+      bannerPath = `/uploads/${bannerName}`;
+    }
+    await this.prisma.profile.update({
+      where: {
+        userId: userId
+      }, data: {
+        bio: dates.bio,
+        photo_url: photoPath,
+        banner_url: bannerPath
+
+      }
+    })
+     return {
+    success: true,
+    message: 'Data updated successfully',
+  };
+  }
 
   async remove(id: number) {}
 
@@ -155,10 +231,11 @@ export class ProfileService {
       }
       
     })
+    const baseUrl = 'http://localhost:3000'
     return {
       username: userProfile?.username,
-      photo_url: userProfile?.photo_url,
-      banner_url: userProfile?.banner_url,
+      photo_url: `${baseUrl}${userProfile?.photo_url}`,
+      banner_url: `${baseUrl}${userProfile?.banner_url}`,
       bio: userProfile?.bio
     }
   }
