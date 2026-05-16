@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
+  Query,
 } from '@nestjs/common';
 
 import { ProfileService } from './profile.service';
@@ -99,6 +100,9 @@ async createProfile(
     },
   ),
 )
+
+
+//update profile infos
   @Patch('user/update')
   async updateProfile(
     @Request() req,
@@ -113,6 +117,20 @@ async createProfile(
       files
     );
   }
+
+//search user profile
+
+@UseGuards(AuthGuard('jwt'))
+@Get('user/search')
+async searchProfile(
+  @Query('username') username: string,
+  @Query('page') page: string,
+  @Request() req,) {
+  const userId = req.user.id;
+  return this.profileService.findByUsername(userId, username, Number(page) || 1)
+}
+
+
 
   @UseGuards(AuthGuard('jwt'))
   @Delete('delete')

@@ -116,9 +116,6 @@ export class ProfileService {
     return profile;
   }
 
-  async findAll() {}
-
-  async findOne(id: number) {}
 
 
   //update profile
@@ -240,5 +237,28 @@ export class ProfileService {
     }
   }
 
-  async findByUsername(username: string) {}
+  async findByUsername(userId: number, username: string, page: number = 1) {
+    const limit = 20
+    if (!userId) {
+      throw new BadRequestException(
+        'UserId is required',
+      );
+    }
+    return await this.prisma.profile.findMany({
+      where: {
+        username: {
+          startsWith: username
+        }
+      },
+      select: {
+        id: true,
+        username: true,
+        photo_url: true,
+        createdAt: true
+
+      },
+      take: limit,
+      skip: (page - 1) * limit
+    })
+  }
 }
