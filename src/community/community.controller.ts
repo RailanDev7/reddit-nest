@@ -1,15 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete , Request, UseGuards} from '@nestjs/common';
 import { CommunityService } from './community.service';
 import { CreateCommunityDto } from './dto/create-community.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
+import { AuthGuard } from '@nestjs/passport';
 
-@Controller('community')
+@Controller('v1/api/community')
 export class CommunityController {
   constructor(private readonly communityService: CommunityService) {}
 
-  @Post()
-  create(@Body() createCommunityDto: CreateCommunityDto) {
-    return this.communityService.create(createCommunityDto);
+   @UseGuards(AuthGuard('jwt'))
+  @Post('create')
+  create(@Body() createCommunityDto: CreateCommunityDto, @Request() req) {
+    const userId = req.user.id
+    return this.communityService.create(userId, createCommunityDto);
   }
 
   @Get()
