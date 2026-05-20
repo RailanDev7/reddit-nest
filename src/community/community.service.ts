@@ -36,9 +36,27 @@ export class CommunityService {
      
   }
 
-  findAll() {
-    return `This action returns all community`;
-  }
+  async findAllNames(userId: number, searchNames: any, page: any) {
+    verifyUserId(userId)
+    const limit = 10
+    const searchNamesResult = await this.prisma.community.findMany({
+      where: {
+        name: {
+          startsWith: searchNames,
+
+        }
+      },
+      select: {
+        name: true
+      },
+      take: limit,
+      skip: (page - 1) * limit,
+      orderBy: {
+        name: 'asc'
+      }
+    }) 
+    return searchNamesResult
+  } 
 
   findOne(id: number) {
     return `This action returns a #${id} community`;

@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete , Request, UseGuards} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete , Request, UseGuards, Query} from '@nestjs/common';
 import { CommunityService } from './community.service';
 import { CreateCommunityDto } from './dto/create-community.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
 import { AuthGuard } from '@nestjs/passport';
 
-@Controller('v1/api/community')
+@Controller('api/v1/community')
 export class CommunityController {
   constructor(private readonly communityService: CommunityService) {}
 
@@ -15,9 +15,10 @@ export class CommunityController {
     return this.communityService.create(userId, createCommunityDto);
   }
 
-  @Get()
-  findAll() {
-    return this.communityService.findAll();
+  @Get('search')
+  findAllNameCommunity(@Body() searchNames: any,  @Request() req, @Query('page') page: string) {
+    const userId = req.user.id
+    return this.communityService.findAllNames(userId,searchNames, Number(page) || 1);
   }
 
   @Get(':id')
