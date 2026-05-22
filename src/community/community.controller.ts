@@ -15,15 +15,21 @@ export class CommunityController {
     return this.communityService.create(userId, createCommunityDto);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Get('search')
-  findAllNameCommunity(@Body() searchNames: any,  @Request() req, @Query('page') page: string) {
+  findAllNameCommunity(
+    @Body() searchNames: any,
+    @Request() req,
+    @Query('page') page: string,
+    @Query('name') names: string) {
     const userId = req.user.id
-    return this.communityService.findAllNames(userId,searchNames, Number(page) || 1);
+    console.log(names)
+    return this.communityService.findAllNames(userId, names, Number(page) || 1);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.communityService.findOne(+id);
+  @Get('search/all')
+  findAll() {
+   return this.communityService.searchCommunity();
   }
 
   @Patch(':id')

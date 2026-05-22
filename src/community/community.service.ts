@@ -14,10 +14,18 @@ export class CommunityService {
     createCommunityDto: CreateCommunityDto,
     ) {
      verifyUserId(userId)
+     const communityExist = await this.prisma.community.findUnique({
+      where: {
+        name: createCommunityDto.name
+      }
+     })
+      if(communityExist) {
+        throw new ConflictException('Community name already in use')
+      }
      const community = await this.prisma.community.create({
       data: {
         name: createCommunityDto.name,
-        slug: createCommunityDto.slog,
+        slug: createCommunityDto.slug,
         image_url: createCommunityDto.image_url,
         bio: createCommunityDto.bio,
         creatorId: userId,
@@ -57,6 +65,19 @@ export class CommunityService {
     }) 
     return searchNamesResult
   } 
+  
+async searchCommunity() {
+  const result = await this.prisma.community.findMany({
+    include: {
+      _count: {
+        select: {
+          members: true
+        }
+      }
+    }
+  })
+return result
+  }
 
   findOne(id: number) {
     return `This action returns a #${id} community`;
