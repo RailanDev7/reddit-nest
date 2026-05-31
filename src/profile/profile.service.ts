@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import * as path from 'path';
 
 import { randomUUID } from 'crypto';
 import { response } from 'express';
+import { verifyUserId } from 'src/utils/functionsParams';
 
 @Injectable()
 export class ProfileService {
@@ -147,85 +149,114 @@ export class ProfileService {
 
 
   //update profile
-  async update(
-    userId: number,
-    dates: UpdateProfileDto,
-    files: any,
-  ) {
-     if (!userId) {
-      throw new BadRequestException(
-        'UserId is required',
-      );
-    }
+ async update(
+  userId: number,
+  dates: UpdateProfileDto,
+  files: any,
+) {
+  if (!userId) {
+    throw new BadRequestException(
+      'UserId is required',
+    );
+  }
 
-    const profileExist =
-      await this.prisma.profile.findUnique({
-        where: {
-          userId,
-        },
-      });
-
-    if (!profileExist) {
-      throw new NotFoundException(
-        'Profile does not exist',
-      );
-    }
-     const photo = files?.photo?.[0];
-    const banner = files?.banner?.[0];
-
-    let photoPath: string | null = null;
-    let bannerPath: string | null = null;
-
-    if (photo) {
-      const photoName = `${randomUUID()}-${
-        photo.originalname
-      }`;
-
-      fs.writeFileSync(
-        path.join(
-          process.cwd(),
-          'uploads',
-          photoName,
-        ),
-        photo.buffer,
-      );
-
-      photoPath = `/uploads/${photoName}`;
-    }
-
-    // salva banner manualmente
-    if (banner) {
-      const bannerName = `${randomUUID()}-${
-        banner.originalname
-      }`;
-
-      fs.writeFileSync(
-        path.join(
-          process.cwd(),
-          'uploads',
-          bannerName,
-        ),
-        banner.buffer,
-      );
-
-      bannerPath = `/uploads/${bannerName}`;
-    }
-    await this.prisma.profile.update({
+  const profileExist =
+    await this.prisma.profile.findUnique({
       where: {
-        userId: userId
-      }, data: {
-        bio: dates.bio,
-        photo_url: photoPath,
-        banner_url: bannerPath
+        userId,
+      },
+    });
 
+  if (!profileExist) {
+    throw new NotFoundException(
+      'Profile does not exist',
+    );
+  }
+
+  const photo = files?.photo?.[0];
+  const banner = files?.banner?.[0];
+
+  let photoPath = profileExist.photo_url;
+  let bannerPath = profileExist.banner_url;
+
+
+  if (photo) {
+    // remove antiga
+    if (profileExist.photo_url) {
+      const oldPhotoPath = path.join(
+        process.cwd(),
+        profileExist.photo_url,
+      );
+
+      if (fs.existsSync(oldPhotoPath)) {
+        fs.unlinkSync(oldPhotoPath);
       }
-    })
-     return {
+    }
+
+    // salva nova
+    const photoName = `${randomUUID()}-${
+      photo.originalname
+    }`;
+
+    fs.writeFileSync(
+      path.join(
+        process.cwd(),
+        'uploads',
+        photoName,
+      ),
+      photo.buffer,
+    );
+
+    photoPath = `/uploads/${photoName}`;
+  }
+
+  
+  if (banner) {
+    // remove antigo
+    if (profileExist.banner_url) {
+      const oldBannerPath = path.join(
+        process.cwd(),
+        profileExist.banner_url,
+      );
+
+      if (fs.existsSync(oldBannerPath)) {
+        fs.unlinkSync(oldBannerPath);
+      }
+    }
+
+    // salva novo
+    const bannerName = `${randomUUID()}-${
+      banner.originalname
+    }`;
+
+    fs.writeFileSync(
+      path.join(
+        process.cwd(),
+        'uploads',
+        bannerName,
+      ),
+      banner.buffer,
+    );
+
+    bannerPath = `/uploads/${bannerName}`;
+  }
+
+  await this.prisma.profile.update({
+    where: {
+      userId,
+    },
+    data: {
+      bio: dates.bio,
+      photo_url: photoPath,
+      banner_url: bannerPath,
+    },
+  });
+
+  return {
     success: true,
     message: 'Data updated successfully',
   };
-  }
-
+}
   async remove(id: number) {}
 
 
@@ -272,7 +303,7 @@ export class ProfileService {
         'UserId is required',
       );
     }
-    return await this.prisma.profile.findMany({
+    const infoUser = await this.prisma.profile.findMany({
       where: {
         username: {
           startsWith: username
@@ -288,5 +319,38 @@ export class ProfileService {
       take: limit,
       skip: (page - 1) * limit
     })
+    const baseUrl = 'http://localhost:3000'
+    const users = infoUser.map((user) => ({
+      ...user,
+      photo_url: user.photo_url
+        ? `${baseUrl}${user.photo_url}`
+        : null,
+    }))
+    return {
+      users
+    }
+  }
+  async deleteProfile(userId: number) {
+    verifyUserId(userId)
+    const existeProfile = await this.prisma.profile.findUnique({
+      where: {
+        userId: userId
+      }, select: {
+        user: true
+      }
+    })
+    if(!existeProfile) {
+      throw new NotFoundException('User does not exist')
+    }
+    await this.prisma.profile.delete({
+      where: {
+        userId: userId
+      }, select: {
+        user: true
+      }
+    })
+    return {
+      status: 'Successfully deleted',
+    }
   }
 }

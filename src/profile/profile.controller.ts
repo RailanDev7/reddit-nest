@@ -35,7 +35,6 @@ export class ProfileController {
   @Get('user/me')
   async getMyProfile(@Request() req) {
     const userId = req.user.id;
-    console.log(userId)
     return this.profileService.findByProfile(userId);
   }
 
@@ -78,6 +77,8 @@ async createProfile(
     files
   );
 }
+
+//update profile infos
 @UseGuards(AuthGuard('jwt'))
 @UseInterceptors(
   FileFieldsInterceptor(
@@ -100,9 +101,6 @@ async createProfile(
     },
   ),
 )
-
-
-//update profile infos
   @Patch('user/update')
   async updateProfile(
     @Request() req,
@@ -142,6 +140,7 @@ async findProfileId(
   @Delete('delete')
   async deleteProfile(@Request() req, ) {
     const userId = req.user.id;
+    return this.profileService.deleteProfile(Number(userId))
     
   }
 }
