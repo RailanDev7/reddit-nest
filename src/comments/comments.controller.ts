@@ -15,20 +15,19 @@ export class CommentsController {
     console.log(userId)
     return this.commentsService.create(userId, createCommentDto);
   }
-
-  @Get()
-  findAll() {
-    return this.commentsService.findAll();
+  @UseGuards(AuthGuard('jwt'))
+  @Get('search/:id')
+  findAll(@Request() req,  @Param('id') postId: string) {
+    const userId = req.user.id
+    console.log(userId, postId)
+    return this.commentsService.findAll(userId, Number(postId));
   }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.commentsService.findOne(+id);
-  }
-
+//update comments
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCommentDto: UpdateCommentDto) {
-    return this.commentsService.update(+id, updateCommentDto);
+  update(@Param('id') id: string, @Body() updateCommentDto: UpdateCommentDto, @Request() req) {
+    const userId = req.user.id
+    return this.commentsService.update(userId, +id, updateCommentDto);
+
   }
 
   @Delete(':id')

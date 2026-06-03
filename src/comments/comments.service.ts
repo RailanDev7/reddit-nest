@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Search } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { verifyUserId } from 'src/community/utils/functionsParams';
+import { verifyUserId } from 'src/utils/functionsParams';
 import { PrismaConfigService } from 'src/prisma-config/prisma-config.service';
 
 @Injectable()
@@ -40,28 +40,62 @@ export class CommentsService {
       }
     }
 
-    return this.prisma.comment.create({
+  await this.prisma.comment.create({
       data: {
         content: createCommentDto.content,
         postId: createCommentDto.postId,
         parentId: createCommentDto.parentId,
-        userId
+        userId: userId
       }
     })
+    return {status: "success"}
   }
 
-  findAll() {
-    return `This action returns all comments`;
+  async findAll(userId, postId) {
+    verifyUserId(userId)
+    const result = await this.prisma.post.findFirst({
+      where: {
+        id: postId,
+        userId: userId
+      }
+    })
+    return result
+  }
+async update(
+  userId: number,
+  id: number,
+  updateCommentDto: UpdateCommentDto,
+) {
+  verifyUserId(userId);
+
+  const comment = await this.prisma.comment.findUnique({
+    where: {
+      id,
+    },
+    select: {
+      userId: true,
+    },
+  });
+
+  if (!comment) {
+    throw new NotFoundException('Comment not exist');
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} comment`;
+  if (comment.userId !== userId) {
+    throw new ForbiddenException(
+      'You do not have permission to edit this comment',
+    );
   }
 
-  update(id: number, updateCommentDto: UpdateCommentDto) {
-    return `This action updates a #${id} comment`;
-  }
-
+  return this.prisma.comment.update({
+    where: {
+      id,
+    },
+    data: {
+      content: updateCommentDto.content,
+    },
+  });
+}
   remove(id: number) {
     return `This action removes a #${id} comment`;
   }
